@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+scikit-learn
+mediapipe==0.10.14
+websockets
+opencv-python
+pandas
