@@ -2,11 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-        sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+@layer base {
+    body {
+        @apply bg-[#121212] text-white antialiased overflow-x-hidden;
+        font-family: 'Inter', -apple-system, sans-serif;
+    }
+}
+
+@layer utilities {
+    .spotify-card {
+        @apply bg-[#181818] hover:bg-[#282828] transition-colors duration-300 rounded-md;
+    }
+
+    .spotify-btn-primary {
+        @apply bg-[#1DB954] text-black font-bold rounded-full hover:scale-105 hover:bg-[#1ed760] transition-all duration-200;
+    }
+
+    .text-subdued {
+        @apply text-[#b3b3b3];
+    }
+}
+
+/* Hide scrollbar but keep functionality */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
 }
