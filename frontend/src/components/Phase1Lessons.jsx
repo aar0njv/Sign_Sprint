@@ -26,7 +26,7 @@ const Phase1Lessons = ({ alphabet, progress, onSelectTarget, onBack }) => {
                         <div
                             key={letter}
                             onClick={() => onSelectTarget(letter)}
-                            className="spotify-card p-4 flex flex-col items-center justify-center aspect-square cursor-pointer group relative overflow-hidden"
+                            className="card p-4 flex flex-col items-center justify-center aspect-square cursor-pointer group relative overflow-hidden"
                         >
                             <span className={`text-5xl font-bold mb-2 ${isCompleted ? 'text-[#1DB954]' : 'text-white'}`}>
                                 {letter}

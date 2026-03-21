@@ -13,8 +13,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load the scikit-learn model
-# In a real app, you would train and save a model first using: pickle.dump(model, open('model.pkl', 'wb'))
 try:
     with open('model.pkl', 'rb') as f:
         model = pickle.load(f)
@@ -31,7 +29,7 @@ async def websocket_endpoint(websocket: WebSocket):
             data = await websocket.receive_text()
             payload = json.loads(data)
             
-            # Extract the 63 coordinates [x1, y1, z1, x2, y2, z2, ...]
+            # Extract the 63 coordinates
             coordinates = payload.get("coordinates", [])
             
             if len(coordinates) == 63:
@@ -40,10 +38,8 @@ async def websocket_endpoint(websocket: WebSocket):
                     prediction = model.predict([coordinates])
                     predicted_letter = str(prediction[0])
                 else:
-                    # Mock prediction if no model file exists
                     predicted_letter = "A" 
-                
-                # Emit result back over WebSocket immediately
+
                 await websocket.send_json({
                     "Predicted_Letter": predicted_letter
                 })

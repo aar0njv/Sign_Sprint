@@ -16,7 +16,7 @@ mp_drawing = mp.solutions.drawing_utils
 
 def collect_data_for_label(label, num_samples=300, save_path="hand_data.csv"):
     cap = cv2.VideoCapture(0)
-    print(f"\n✅ Collecting data for '{label}'.")
+    print(f"\n Collecting data for '{label}'.")
     print("Get ready! Starting in 3 seconds...")
     time.sleep(1)
     print("2...")
@@ -74,9 +74,9 @@ def collect_data_for_label(label, num_samples=300, save_path="hand_data.csv"):
             df.to_csv(save_path, mode='a', header=False, index=False)
         else:
             df.to_csv(save_path, index=False)
-        print(f"\n🎉 Successfully collected and saved {len(data)} samples for '{label}'.")
+        print(f"\n Successfully collected and saved {len(data)} samples for '{label}'.")
     else:
-        print("\n❌ No data collected.")
+        print("\n No data collected.")
 
 if __name__ == "__main__":
     print("-" * 50)

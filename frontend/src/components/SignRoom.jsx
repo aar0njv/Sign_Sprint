@@ -1,14 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Hands } from '@mediapipe/hands';
 import { Camera } from '@mediapipe/camera_utils';
+import { supabase } from '../supabaseClient';
 
 const SignRoom = ({
-    userId = 'test-user-123',
+    user,
     targetLetter = 'A',
     alphabet,
     progress,
     onSelectTarget,
     onNext,
+    onSkip,
     onClose
 }) => {
     const videoRef = useRef(null);
@@ -18,8 +20,6 @@ const SignRoom = ({
     const [predictedLetter, setPredictedLetter] = useState(null);
     const [isSuccess, setIsSuccess] = useState(false);
 
-    // We'll require a brief sustain logic (e.g. 5 consecutive frames matching) to reduce flicker,
-    // rather than exactly 2 seconds, to feel snappier like a quick verification
     const [matchCount, setMatchCount] = useState(0);
 
     useEffect(() => {
@@ -29,10 +29,24 @@ const SignRoom = ({
         setMatchCount(0);
 
         wsRef.current = new WebSocket('ws://localhost:8000/ws');
+
+        let localMatchStartTime = null;
+
         wsRef.current.onmessage = (event) => {
             const data = JSON.parse(event.data);
             if (data.Predicted_Letter) {
                 setPredictedLetter(data.Predicted_Letter);
+
+                // Track if the prediction has been continuously accurate for 5 seconds
+                if (data.Predicted_Letter === targetLetter) {
+                    if (!localMatchStartTime) {
+                        localMatchStartTime = Date.now();
+                    } else if (Date.now() - localMatchStartTime >= 5000) {
+                        setIsSuccess(true);
+                    }
+                } else {
+                    localMatchStartTime = null;
+                }
             }
         };
 
@@ -41,34 +55,37 @@ const SignRoom = ({
         };
     }, [targetLetter]);
 
-    useEffect(() => {
-        if (isSuccess) return; // Stop checking if already solved
-
-        if (predictedLetter === targetLetter) {
-            setMatchCount(prev => {
-                const newCount = prev + 1;
-                // If matched for roughly 5 consecutive frames (very fast but avoids 1-frame glitches)
-                if (newCount > 5) {
-                    setIsSuccess(true);
-                    triggerLevelComplete();
-                }
-                return newCount;
-            });
-        } else {
-            setMatchCount(0);
-        }
-    }, [predictedLetter, targetLetter, isSuccess]);
-
     const triggerLevelComplete = async () => {
+        if (!user) {
+            console.warn('No user found, cannot save progress');
+            return;
+        }
         try {
-            await fetch('http://localhost:3001/level-complete', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user_id: userId,
-                    level_id: `level_${targetLetter}`
-                })
-            });
+            // Check if progress already exists to avoid duplicates
+            const { data: existing } = await supabase
+                .from('user_progress')
+                .select('id')
+                .eq('user_id', user.id)
+                .eq('letter', targetLetter)
+                .maybeSingle();
+
+            if (!existing) {
+                const { error } = await supabase
+                    .from('user_progress')
+                    .insert({
+                        user_id: user.id,
+                        letter: targetLetter,
+                        completed: true
+                    });
+
+                if (error) {
+                    console.error('Error inserting progress:', error);
+                } else {
+                    console.log('Progress successfully saved!');
+                }
+            } else {
+                console.log('Progress already exists in database');
+            }
         } catch (error) {
             console.error('Failed to save progress', error);
         }
@@ -179,28 +196,32 @@ const SignRoom = ({
                     </div>
                 </div>
 
-                {/* Conditional Next Button Container in Sidebar */}
-                <div className="p-6 border-t border-[#282828] h-32 flex flex-col items-center justify-center bg-black gap-2">
-                    {isSuccess ? (
+                {/* Bottom Buttons Container in Sidebar */}
+                <div className="p-6 border-t border-[#282828] min-h-[120px] flex flex-col items-center justify-center bg-black gap-3">
+                    <div className="text-center text-subdued text-xs px-2 mb-1">
+                        {isSuccess ? "Great job! Click Proceed to save your progress." : "Hold the correct sign steadily for 5 seconds to unlock Proceed, or skip it."}
+                    </div>
+                    <div className="flex gap-3 w-full">
                         <button
-                            onClick={onNext}
-                            className="spotify-btn-primary w-full py-4 text-lg animate-pulse shadow-[0_0_20px_rgba(29,185,84,0.3)]"
+                            onClick={onSkip}
+                            className="flex-1 py-3 text-sm font-bold text-white border border-[#3E3E3E] rounded-full hover:border-[#F44336] hover:bg-[#282828] transition-colors"
                         >
-                            Next Lesson
+                            Skip to Next
                         </button>
-                    ) : (
-                        <>
-                            <div className="text-center text-subdued text-sm px-2 mb-2">
-                                Show the correct sign to unlock, or skip to the next lesson.
-                            </div>
-                            <button
-                                onClick={onNext}
-                                className="w-full py-3 text-sm font-bold text-white border border-[#3E3E3E] rounded-full hover:border-[#F44336] hover:bg-[#282828] transition-colors"
-                            >
-                                Skip to Next
-                            </button>
-                        </>
-                    )}
+                        <button
+                            onClick={async () => {
+                                await triggerLevelComplete();
+                                onNext();
+                            }}
+                            disabled={!isSuccess}
+                            className={`flex-1 py-3 text-sm font-bold rounded-full transition-all ${isSuccess
+                                ? 'bg-[#1DB954] hover:bg-[#1ed760] text-black shadow-[0_0_15px_rgba(29,185,84,0.3)]'
+                                : 'bg-[#282828] text-[#555] border border-[#333] cursor-not-allowed'
+                                }`}
+                        >
+                            Proceed
+                        </button>
+                    </div>
                 </div>
             </div>
 
