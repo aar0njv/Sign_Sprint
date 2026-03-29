@@ -43,4 +43,4 @@ jobs:
         pip install -r requirements.txt
 
     - name: Test Docker Compose Build
-      run: docker-compose build
+      run: docker compose build

@@ -1,0 +1,14 @@
+# Ignore git and github metadata
+.git
+.github
+
+# Ignore sensitive files
+.env
+.env.*
+
+# Ignore dependencies and build artifacts
+node_modules/
+__pycache__/
+build/
+dist/
+.DS_Store
